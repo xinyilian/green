@@ -4,61 +4,88 @@
   <title>绿色识别演示（手机摄像头）</title>
   <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();"></script>
   <style>
-    #video {
+    video {
       display: block;
       width: 320px;
       height: 240px;
-      margin: 10px 0;
       border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    #log {
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      background: #f4f4f4;
+      border: 1px solid #ccc;
+      padding: 5px;
+      max-height: 150px;
+      overflow-y: auto;
     }
   </style>
 </head>
 <body>
   <h2>绿色识别演示（手机摄像头）</h2>
   <video id="video" autoplay playsinline></video>
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
   <p id="result">等待 OpenCV 加载...</p>
+  <div id="log"></div>
 
 <script>
 let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
-let detectionTimer = null;
+let logDiv = document.getElementById("log");
+
+function log(msg) {
+  console.log(msg);
+  logDiv.innerText = msg + '\n' + logDiv.innerText;
+}
 
 function onOpenCvReady() {
+  log("✅ OpenCV 加载完成！");
   document.getElementById("result").innerText = "OpenCV 加载完成，正在启动摄像头...";
   navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
     video.srcObject = stream;
     video.onloadedmetadata = () => {
       document.getElementById("result").innerText = "摄像头已开启，开始检测...";
-      detectionTimer = setInterval(detectGreen, 1000);
+      setInterval(detectGreen, 1000);
     };
   }).catch(err => {
-    document.getElementById("result").innerText = "无法打开摄像头：" + err;
+    document.getElementById("result").innerText = "无法访问摄像头：" + err;
+    log("❌ 摄像头错误：" + err);
   });
 }
 
 function detectGreen() {
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  let src = cv.imread(canvas);
-  let hsv = new cv.Mat();
-  cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
-  cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
+  log("📸 正在获取画面并识别...");
+  try {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    let src = cv.imread(canvas);
+    let hsv = new cv.Mat();
+    cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
+    cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
 
-  let lower = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [35, 50, 50, 0]);
-  let upper = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [85, 255, 255, 255]);
-  let mask = new cv.Mat();
-  cv.inRange(hsv, lower, upper, mask);
+    let lower = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [35, 50, 50, 0]);
+    let upper = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [85, 255, 255, 255]);
+    let mask = new cv.Mat();
+    cv.inRange(hsv, lower, upper, mask);
 
-  let greenPixels = cv.countNonZero(mask);
-  let ratio = greenPixels / (hsv.rows * hsv.cols);
+    let greenPixels = cv.countNonZero(mask);
+    let ratio = greenPixels / (hsv.rows * hsv.cols);
+    let percent = (ratio * 100).toFixed(1);
 
-  let resultText = ratio > 0.2
-    ? `✅ 检测到绿色！占比 ${(ratio * 100).toFixed(1)}%`
-    : `❌ 没检测到绿色，占比 ${(ratio * 100).toFixed(1)}%`;
-  document.getElementById("result").innerText = resultText;
+    let message = ratio > 0.2
+      ? `✅ 检测到绿色，占比 ${percent}%`
+      : `❌ 未检测到绿色，占比 ${percent}%`;
 
-  src.delete(); hsv.delete(); mask.delete(); lower.delete(); upper.delete();
+    document.getElementById("result").innerText = message;
+    log("📊 " + message);
+
+    // 释放内存
+    src.delete(); hsv.delete(); mask.delete(); lower.delete(); upper.delete();
+  } catch (err) {
+    log("⚠️ 识别错误：" + err);
+  }
 }
 </script>
 </body>
