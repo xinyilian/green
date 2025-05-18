@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>绿色识别演示</title>
+  <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+</head>
+<body>
+  <h2>绿色识别演示（手机摄像头）</h2>
+  <video id="video" width="320" height="240" autoplay></video>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <p id="result">初始化中...</p>
+
+<script>
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+  video.srcObject = stream;
+  document.getElementById("result").innerText = "摄像头已开启，正在检测...";
+}).catch(err => {
+  alert("无法访问摄像头：" + err);
+});
+
+function detectGreen() {
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  let src = cv.imread(canvas);
+  let hsv = new cv.Mat();
+  cv.cvtColor(src, hsv, cv.COLOR_RGBA2RGB);
+  cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
+
+  let lower = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [35, 50, 50, 0]);
+  let upper = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [85, 255, 255, 255]);
+  let mask = new cv.Mat();
+  cv.inRange(hsv, lower, upper, mask);
+
+  let greenPixels = cv.countNonZero(mask);
+  let ratio = greenPixels / (hsv.rows * hsv.cols);
+
+  if (ratio > 0.2) {
+    document.getElementById("result").innerText = "✅ 检测到绿色！占比：" + (ratio * 100).toFixed(1) + "%";
+  } else {
+    document.getElementById("result").innerText = "❌ 没检测到绿色 占比：" + (ratio * 100).toFixed(1) + "%";
+  }
+
+  src.delete(); hsv.delete(); mask.delete(); lower.delete(); upper.delete();
+}
+
+setInterval(detectGreen, 1000);
+</script>
+</body>
+</html>
