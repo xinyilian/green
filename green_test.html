@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>绿色识别演示（手机摄像头）</title>
-  <script async src="https://docs.opencv.org/4.5.5/opencv.js" onload="cvLoaded()"></script>
+  <script async src="https://docs.opencv.org/4.5.5/opencv.js" type="text/javascript" onload="cv['onRuntimeInitialized'] = onReady;"></script>
   <style>
     video {
       display: block;
@@ -27,7 +27,7 @@
   <h2>绿色识别演示（手机摄像头）</h2>
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
-  <p id="result">等待 OpenCV 加载...</p>
+  <p id="result">加载中...</p>
   <div id="log"></div>
 
 <script>
@@ -41,16 +41,9 @@ function log(msg) {
   logDiv.innerText = msg + '\n' + logDiv.innerText;
 }
 
-function cvLoaded() {
-  log("📦 OpenCV.js 加载完成，等待初始化...");
-  cv['onRuntimeInitialized'] = () => {
-    log("✅ OpenCV 初始化完成！");
-    document.getElementById("result").innerText = "OpenCV 初始化完成，正在启动摄像头...";
-    startCamera();
-  };
-}
-
-function startCamera() {
+function onReady() {
+  log("✅ OpenCV 初始化完成");
+  document.getElementById("result").innerText = "OpenCV 初始化完成，正在启动摄像头...";
   navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
     video.srcObject = stream;
     video.onloadedmetadata = () => {
@@ -58,13 +51,20 @@ function startCamera() {
       setInterval(detectGreen, 1000);
     };
   }).catch(err => {
-    document.getElementById("result").innerText = "❌ 无法访问摄像头：" + err;
-    log("❌ 摄像头错误：" + err);
+    log("❌ 摄像头访问失败：" + err);
+    document.getElementById("result").innerText = "❌ 摄像头访问失败：" + err;
   });
 }
 
+// fallback: 如果10秒还没准备好，就提示
+setTimeout(() => {
+  if (typeof cv === 'undefined' || !cv.imread) {
+    log("❌ OpenCV 加载失败！请检查网络或浏览器兼容性");
+    document.getElementById("result").innerText = "❌ OpenCV 加载失败";
+  }
+}, 10000);
+
 function detectGreen() {
-  log("📸 正在获取画面并识别...");
   try {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     let src = cv.imread(canvas);
@@ -81,16 +81,15 @@ function detectGreen() {
     let ratio = greenPixels / (hsv.rows * hsv.cols);
     let percent = (ratio * 100).toFixed(1);
 
-    let message = ratio > 0.2
+    let result = ratio > 0.2
       ? `✅ 检测到绿色，占比 ${percent}%`
       : `❌ 未检测到绿色，占比 ${percent}%`;
-
-    document.getElementById("result").innerText = message;
-    log("📊 " + message);
+    document.getElementById("result").innerText = result;
+    log(result);
 
     src.delete(); hsv.delete(); mask.delete(); lower.delete(); upper.delete();
   } catch (err) {
-    log("⚠️ 识别错误：" + err);
+    log("⚠️ 检测失败：" + err);
   }
 }
 </script>
