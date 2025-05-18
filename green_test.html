@@ -3,10 +3,19 @@
 <head>
   <title>绿色识别演示（手机摄像头）</title>
   <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();"></script>
+  <style>
+    #video {
+      display: block;
+      width: 320px;
+      height: 240px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body>
   <h2>绿色识别演示（手机摄像头）</h2>
-  <video id="video" width="320" height="240" autoplay></video>
+  <video id="video" autoplay playsinline></video>
   <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
   <p id="result">等待 OpenCV 加载...</p>
 
@@ -14,17 +23,18 @@
 let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
-let greenDetectionInterval;
+let detectionTimer = null;
 
 function onOpenCvReady() {
   document.getElementById("result").innerText = "OpenCV 加载完成，正在启动摄像头...";
-
   navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
     video.srcObject = stream;
-    document.getElementById("result").innerText = "摄像头已开启，正在检测...";
-    greenDetectionInterval = setInterval(detectGreen, 1000);
+    video.onloadedmetadata = () => {
+      document.getElementById("result").innerText = "摄像头已开启，开始检测...";
+      detectionTimer = setInterval(detectGreen, 1000);
+    };
   }).catch(err => {
-    alert("无法访问摄像头：" + err);
+    document.getElementById("result").innerText = "无法打开摄像头：" + err;
   });
 }
 
@@ -43,11 +53,10 @@ function detectGreen() {
   let greenPixels = cv.countNonZero(mask);
   let ratio = greenPixels / (hsv.rows * hsv.cols);
 
-  if (ratio > 0.2) {
-    document.getElementById("result").innerText = "✅ 检测到绿色！占比：" + (ratio * 100).toFixed(1) + "%";
-  } else {
-    document.getElementById("result").innerText = "❌ 没检测到绿色 占比：" + (ratio * 100).toFixed(1) + "%";
-  }
+  let resultText = ratio > 0.2
+    ? `✅ 检测到绿色！占比 ${(ratio * 100).toFixed(1)}%`
+    : `❌ 没检测到绿色，占比 ${(ratio * 100).toFixed(1)}%`;
+  document.getElementById("result").innerText = resultText;
 
   src.delete(); hsv.delete(); mask.delete(); lower.delete(); upper.delete();
 }
