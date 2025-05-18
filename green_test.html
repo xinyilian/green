@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>绿色识别演示（手机摄像头）</title>
-  <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+  <script async src="https://docs.opencv.org/4.5.5/opencv.js" onload="cvLoaded()"></script>
   <style>
     video {
       display: block;
@@ -27,7 +27,7 @@
   <h2>绿色识别演示（手机摄像头）</h2>
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
-  <p id="result">等待 OpenCV 初始化...</p>
+  <p id="result">等待 OpenCV 加载...</p>
   <div id="log"></div>
 
 <script>
@@ -41,10 +41,16 @@ function log(msg) {
   logDiv.innerText = msg + '\n' + logDiv.innerText;
 }
 
-cv['onRuntimeInitialized'] = () => {
-  log("✅ OpenCV 初始化完成");
-  document.getElementById("result").innerText = "OpenCV 初始化完成，正在启动摄像头...";
+function cvLoaded() {
+  log("📦 OpenCV.js 加载完成，等待初始化...");
+  cv['onRuntimeInitialized'] = () => {
+    log("✅ OpenCV 初始化完成！");
+    document.getElementById("result").innerText = "OpenCV 初始化完成，正在启动摄像头...";
+    startCamera();
+  };
+}
 
+function startCamera() {
   navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
     video.srcObject = stream;
     video.onloadedmetadata = () => {
@@ -55,7 +61,7 @@ cv['onRuntimeInitialized'] = () => {
     document.getElementById("result").innerText = "❌ 无法访问摄像头：" + err;
     log("❌ 摄像头错误：" + err);
   });
-};
+}
 
 function detectGreen() {
   log("📸 正在获取画面并识别...");
