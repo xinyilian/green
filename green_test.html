@@ -1,26 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>绿色识别演示</title>
-  <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+  <title>绿色识别演示（手机摄像头）</title>
+  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();"></script>
 </head>
 <body>
   <h2>绿色识别演示（手机摄像头）</h2>
   <video id="video" width="320" height="240" autoplay></video>
   <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-  <p id="result">初始化中...</p>
+  <p id="result">等待 OpenCV 加载...</p>
 
 <script>
 let video = document.getElementById("video");
 let canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
+let greenDetectionInterval;
 
-navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-  video.srcObject = stream;
-  document.getElementById("result").innerText = "摄像头已开启，正在检测...";
-}).catch(err => {
-  alert("无法访问摄像头：" + err);
-});
+function onOpenCvReady() {
+  document.getElementById("result").innerText = "OpenCV 加载完成，正在启动摄像头...";
+
+  navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+    video.srcObject = stream;
+    document.getElementById("result").innerText = "摄像头已开启，正在检测...";
+    greenDetectionInterval = setInterval(detectGreen, 1000);
+  }).catch(err => {
+    alert("无法访问摄像头：" + err);
+  });
+}
 
 function detectGreen() {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -45,8 +51,6 @@ function detectGreen() {
 
   src.delete(); hsv.delete(); mask.delete(); lower.delete(); upper.delete();
 }
-
-setInterval(detectGreen, 1000);
 </script>
 </body>
 </html>
