@@ -86,6 +86,10 @@ function detectGreen() {
       : `❌ do not detected green，proportion ${percent}%`;
     document.getElementById("result").innerText = result;
     log(result);
+    
+    let url = ratio > 0.2 ? "http://172.20.10.2/green" : "http://172.20.10.2/nogreen";
+fetch(url).catch(err => log("请求失败：" + err));
+
 
     src.delete(); hsv.delete(); mask.delete(); lower.delete(); upper.delete();
   } catch (err) {
