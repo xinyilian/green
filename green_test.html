@@ -87,7 +87,7 @@ function detectGreen() {
     document.getElementById("result").innerText = result;
     log(result);
     
-    let url = ratio > 0.2 ? "http://172.20.10.2/green" : "http://172.20.10.2/nogreen";
+    let url = ratio > 0.2 ? "http://172.20.10.7/green" : "http://172.20.10.7/nogreen";
 fetch(url).catch(err => log("请求失败：" + err));
 
 
