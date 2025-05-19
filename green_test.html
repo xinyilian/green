@@ -82,8 +82,8 @@ function detectGreen() {
     let percent = (ratio * 100).toFixed(1);
 
     let result = ratio > 0.2
-      ? `✅ 检测到绿色，占比 ${percent}%`
-      : `❌ 未检测到绿色，占比 ${percent}%`;
+      ? `✅ detected green，占比 ${percent}%`
+      : `❌ do not detected green，占比 ${percent}%`;
     document.getElementById("result").innerText = result;
     log(result);
 
